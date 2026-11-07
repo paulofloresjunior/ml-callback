@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The authorization code is in this page's URL: never leak it via Referer,
+     never let search engines index it, and load nothing from third parties. -->
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Callback OAuth</title>
+<style>
+  :root { --bg: #f6f6f4; --fg: #1d1d1b; --muted: #6b6b66; --card: #fff; --line: #deded8; --accent: #2f6fde; --ok: #1f8a4c; --err: #b3261e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --fg: #ececea; --muted: #a3a39e; --card: #20201e; --line: #3a3a36; --accent: #7aa7ff; --ok: #5cc98a; --err: #ff8a80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 640px; margin: 48px auto; padding: 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
+  h1 { font-size: 1.25rem; margin: 0 0 8px; }
+  p { margin: 8px 0; color: var(--muted); }
+  textarea { width: 100%; height: 96px; margin: 12px 0; padding: 10px; font: 13px/1.4 ui-monospace, Consolas, monospace; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; resize: none; word-break: break-all; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; cursor: pointer; }
+  .status { margin-top: 12px; font-weight: 600; }
+  .ok { color: var(--ok); } .err { color: var(--err); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div id="success" class="hidden">
+      <h1>✅ Autorização recebida</h1>
+      <p>Copie a URL abaixo e cole no terminal do setup (prompt oculto). Não compartilhe com ninguém.</p>
+      <textarea id="url" readonly></textarea>
+      <button id="copy" type="button">Copiar URL</button>
+      <div id="copied" class="status ok hidden">Copiada! Já pode colar no terminal e fechar esta aba.</div>
+    </div>
+    <div id="error" class="hidden">
+      <h1>❌ A autorização não foi concluída</h1>
+      <p id="error-detail"></p>
+      <p>Rode o setup de novo no terminal.</p>
+    </div>
+    <div id="empty" class="hidden">
+      <h1>Callback OAuth</h1>
+      <p>Esta página só recebe o retorno do login do Mercado Livre. Sem parâmetros, não há nada a fazer aqui.</p>
+    </div>
+  </div>
+</main>
+<script>
+  (function () {
+    var params = new URLSearchParams(location.search);
+    var show = function (id) { document.getElementById(id).classList.remove("hidden"); };
+    if (params.get("error")) {
+      document.getElementById("error-detail").textContent =
+        params.get("error") + (params.get("error_description") ? ": " + params.get("error_description") : "");
+      show("error");
+      return;
+    }
+    if (!params.get("code")) { show("empty"); return; }
+    var fullUrl = location.href;
+    var box = document.getElementById("url");
+    box.value = fullUrl;
+    show("success");
+    document.getElementById("copy").addEventListener("click", function () {
+      var done = function () {
+        show("copied");
+        // Drop the code from the address bar/history once it has been copied.
+        history.replaceState(null, "", location.pathname);
+      };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(fullUrl).then(done, function () { box.select(); document.execCommand("copy"); done(); });
+      } else {
+        box.select(); document.execCommand("copy"); done();
+      }
+    });
+  })();
+</script>
+</body>
+</html>
